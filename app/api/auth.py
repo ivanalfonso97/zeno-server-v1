@@ -1,6 +1,6 @@
 from app.db.supabase_client import supabase
 from fastapi import APIRouter, HTTPException
-from app.models.auth import LoginRequest, LoginResponse, UserResponse
+from app.models.auth import SignupRequest, LoginRequest, UserResponse, SignupResponse, LoginResponse 
 
 router = APIRouter()
 
@@ -19,8 +19,36 @@ async def login(request: LoginRequest):
                 email=response.user.email
             )
         )
-    except Exception as e:
+    except HTTPException as e:
+        # Re-raise HTTP exceptions from client
+        raise e
+    except Exception:
+        # Handle unexpected errors
         raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials"
+            status_code=500,
+            detail="An unexpected error occurred during login"
+        )
+
+@router.post("/signup", response_model=SignupResponse)
+async def signup(request: SignupRequest):
+    try:
+        response = await supabase.signup(
+            request.email, 
+            request.password, 
+            request.first_name, 
+            request.last_name
+        )
+        return SignupResponse(
+            access_token=response.session.access_token,
+            user=UserResponse(
+                id=response.user.id,
+                email=response.user.email
+            )
+        )
+    except HTTPException as e:
+        raise e
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred during signup"
         )
