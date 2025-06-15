@@ -17,8 +17,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix="/v1")
+app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
     return {"message": "Welcome to Zeno Server API"}
+
+# Allows you to check existing routes
+@app.get("/debug/routes")
+async def debug_routes():
+    routes = []
+    for route in app.routes:
+        routes.append({
+            "path": route.path,
+            "name": route.name,
+            "methods": route.methods
+        })
+    return {"routes": routes}
