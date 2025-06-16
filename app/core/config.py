@@ -11,7 +11,10 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
     GOOGLE_API_KEY: str
-    GOOGLE_REDIRECT_URI: str
+    GOOGLE_CALENDAR_REDIRECT_URI: str
+
+    # Frontend settings
+    FRONTEND_URL: str
 
     class Config:
         env_file = ".env"

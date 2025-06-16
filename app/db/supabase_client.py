@@ -13,6 +13,10 @@ class SupabaseClient:
             settings.SUPABASE_URL,
             settings.SUPABASE_KEY
         )
+        self.admin_client: Client = create_client(
+            settings.SUPABASE_URL,
+            settings.SUPABASE_SERVICE_KEY
+        )
 
     async def login(self, email: str, password: str):
         try:
