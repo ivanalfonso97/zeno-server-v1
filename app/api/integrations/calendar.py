@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from app.core.config import settings
 from app.api.deps import get_current_user
 from app.db.supabase_client import supabase
-from app.models.calendar import GoogleCalendarAuthUrlResponse
+from app.schemas.calendar import GoogleCalendarAuthUrlResponse
 from app.services.integrations.google_calendar import get_google_calendar_events
 
 router = APIRouter()

@@ -1,6 +1,6 @@
 from app.db.supabase_client import supabase
 from fastapi import APIRouter, HTTPException
-from app.models.auth import SignupRequest, LoginRequest, UserResponse, SignupResponse, LoginResponse 
+from app.schemas.auth import SignupRequest, LoginRequest, UserResponse, SignupResponse, LoginResponse 
 
 router = APIRouter()
 
