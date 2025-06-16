@@ -1,10 +1,14 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from datetime import datetime
+from google_auth_oauthlib.flow import Flow
 from fastapi.responses import RedirectResponse
-from app.models.calendar import GoogleCalendarAuthUrlResponse
+from google.oauth2.credentials import Credentials
+from fastapi import APIRouter, HTTPException, Depends, Request
+
 from app.core.config import settings
 from app.api.deps import get_current_user
-from google_auth_oauthlib.flow import Flow
 from app.db.supabase_client import supabase
+from app.models.calendar import GoogleCalendarAuthUrlResponse
+from app.services.integrations.google_calendar import get_google_calendar_events
 
 router = APIRouter()
 
@@ -114,4 +118,45 @@ async def google_calendar_callback(
         print("Error in callback:", str(e))
         return RedirectResponse(
             url=f"{settings.FRONTEND_URL}/integrations/link-google-calendar?status=error&message={str(e)}"
-        ) 
+        )
+
+@router.get("/events")
+async def get_calendar_events(current_user: str = Depends(get_current_user)):
+    """
+    Fetches Google Calendar events for the authenticated user.
+    """
+    try:
+        # Retrieve user's Google Calendar tokens from Supabase metadata
+        response = supabase.admin_client.auth.admin.get_user_by_id(current_user)
+        user_metadata = response.user.user_metadata
+
+        google_access_token = user_metadata.get("google_access_token")
+        google_token_expiry = user_metadata.get("google_token_expiry")
+        google_refresh_token = user_metadata.get("google_refresh_token")
+
+        if not all([google_access_token, google_token_expiry, google_refresh_token]):
+            raise HTTPException(
+                status_code=404, 
+                detail="Google Calendar integration not found for this user. Please link your account."
+            )
+
+        # Create Google Credentials object
+        credentials = Credentials(
+            token=google_access_token,
+            refresh_token=google_refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+            scopes=SCOPES,
+            expiry=datetime.fromisoformat(google_token_expiry.replace('Z', '+00:00')) if google_token_expiry else None
+        )
+
+        # Use the credentials to fetch events
+        events = await get_google_calendar_events(credentials)
+        return {"events": events}
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Error fetching events for user {current_user}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch Google Calendar events: {e}") 
