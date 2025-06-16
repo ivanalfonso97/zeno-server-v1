@@ -1,3 +1,4 @@
+import jwt
 from datetime import datetime
 from google_auth_oauthlib.flow import Flow
 from fastapi.responses import RedirectResponse
@@ -13,7 +14,11 @@ from app.services.integrations.google_calendar import get_google_calendar_events
 router = APIRouter()
 
 # Google Calendar API scope - read-only access
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+SCOPES = [
+    'https://www.googleapis.com/auth/calendar.readonly',
+    'https://www.googleapis.com/auth/userinfo.email',
+    'openid' # Added openid scope
+]
 
 def get_google_flow() -> Flow:
     """Get configured Google OAuth flow."""
@@ -32,12 +37,6 @@ def get_google_flow() -> Flow:
 
 @router.get("/auth-url", response_model=GoogleCalendarAuthUrlResponse)
 async def get_google_calendar_auth_url(current_user: str = Depends(get_current_user)):
-    print("DEBUG: Endpoint hit - /auth-url")
-    print("DEBUG: User ID:", current_user)
-    print("DEBUG: Settings:", {
-        "client_id": settings.GOOGLE_CLIENT_ID,
-        "redirect_uri": settings.GOOGLE_CALENDAR_REDIRECT_URI
-    })
     try:
         # Create OAuth2 flow
         flow = get_google_flow()
@@ -89,17 +88,34 @@ async def google_calendar_callback(
         # Exchange the authorization code for tokens
         flow.fetch_token(code=code)
         credentials = flow.credentials
+        
+        linked_google_email = None
+        if credentials.id_token:
+            # Decode the ID token to get user info (email)
+            # The ID token is a JWT, its payload contains user claims
+            try:
+                id_token_info = jwt.decode(
+                    credentials.id_token, options={"verify_signature": False}
+                )
+                linked_google_email = id_token_info.get("email")
+            except Exception as e:
+                print(f"Error decoding ID token: {e}")
+                # Log error but don't fail the entire process
 
         # Update user's metadata in Supabase using the admin client
+        updated_metadata = {
+            "google_access_token": credentials.token,
+            "google_token_expiry": credentials.expiry.isoformat(),
+            "google_refresh_token": credentials.refresh_token,
+        }
+        if linked_google_email:
+            updated_metadata["google_calendar_linked_email"] = linked_google_email
+
         try:
             supabase.admin_client.auth.admin.update_user_by_id(
                 user_id,
                 {
-                    "user_metadata": {
-                        "google_access_token": credentials.token,
-                        "google_token_expiry": credentials.expiry.isoformat(),
-                        "google_refresh_token": credentials.refresh_token
-                    }
+                    "user_metadata": updated_metadata
                 }
             )
         except Exception as e:

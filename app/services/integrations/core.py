@@ -12,6 +12,7 @@ async def check_google_calendar_integration_status(user_metadata: Dict[str, Any]
         An IntegrationStatus object for Google Calendar.
     """
     google_refresh_token = user_metadata.get("google_refresh_token")
+    linked_google_calendar_email = user_metadata.get("google_calendar_linked_email")
 
     is_connected = False
     error_message = None
@@ -24,5 +25,6 @@ async def check_google_calendar_integration_status(user_metadata: Dict[str, Any]
     return IntegrationStatus(
         is_connected=is_connected,
         last_checked_at=datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
-        error_message=error_message
+        error_message=error_message,
+        linked_google_calendar_email=linked_google_calendar_email
     ) 

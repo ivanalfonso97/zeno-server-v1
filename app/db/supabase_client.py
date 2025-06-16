@@ -6,9 +6,6 @@ from app.core.config import settings
 
 class SupabaseClient:
     def __init__(self):
-        print("Supabase URL:", settings.SUPABASE_URL)
-        print("Supabase Key:", settings.SUPABASE_KEY)
-        
         self.client: Client = create_client(
             settings.SUPABASE_URL,
             settings.SUPABASE_KEY
@@ -54,7 +51,6 @@ class SupabaseClient:
             return response
         except Exception as e:
             error_message = str(e)
-            print("IC01",error_message)
             if "User already registered" in error_message:
                 raise HTTPException(
                     status_code=400,
