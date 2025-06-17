@@ -13,6 +13,6 @@ async def chat_endpoint(request: ChatRequest, current_user: str = Depends(get_cu
     """
     try:
         # `generate_chat_response` yields text chunks
-        return StreamingResponse(generate_chat_response(request.messages), media_type="text/plain")
+        return StreamingResponse(generate_chat_response(messages=request.messages, current_user=current_user), media_type="text/plain")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat API error: {e}")

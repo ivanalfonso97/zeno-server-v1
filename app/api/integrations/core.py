@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.api.deps import get_current_user
 from app.db.supabase_client import supabase
-from app.schemas.integrations import IntegrationsStatusResponse
+from app.schemas.integrations.core import IntegrationsStatusResponse
 from app.services.integrations.core import check_google_calendar_integration_status
 
 router = APIRouter()

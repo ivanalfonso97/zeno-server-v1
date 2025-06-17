@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from datetime import datetime, timezone
 
-from app.schemas.integrations import IntegrationStatus
+from app.schemas.integrations.core import IntegrationStatus
 
 async def check_google_calendar_integration_status(user_metadata: Dict[str, Any]) -> IntegrationStatus:
     """
